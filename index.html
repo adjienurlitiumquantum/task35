@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form NIK dan Nama</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .error { color: red; font-size: 12px; margin-top: 0; }
+    </style>
+</head>
+<body>
+    <form>
+        <div>
+            <input type="text" name="nik" class="nik" placeholder="Masukkan NIK" oninput="checkInput(event)">
+            <p class="error nik--error"></p>
+        </div>
+        <div>
+            <input type="text" name="name" class="name" placeholder="Masukkan Nama" oninput="checkInput(event)">
+            <p class="error nama--error"></p>
+        </div>
+        <br>
+        <button onclick="addNewData(event)" disabled>Simpan</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <td>No</td>
+                <td>NIK</td>
+                <td>Nama</td>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            <tr>
+                <td>1</td>
+                <td>06650053</td>
+                <td>Sunu Pinasthika Fajar</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/validator/13.6.0/validator.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const nik = document.querySelector('.nik');
+        const name = document.querySelector('.name');
+        const button = document.querySelector('form button');
+        const tableBody = document.getElementById('tableBody');
+        let errors = [];
+
+        function checkInput(e) {
+            if (!validation()) {
+                button.setAttribute('disabled', true);
+            } else {
+                button.removeAttribute('disabled');
+            }
+        }
+
+        function validation() {
+            const nikError = document.querySelector('.nik--error');
+            const namaError = document.querySelector('.nama--error');
+            errors = [];
+
+            nikError.innerHTML = '';
+            namaError.innerHTML = '';
+
+            if (validator.isEmpty(nik.value)) {
+                errors.push('NIK kosong');
+                nikError.innerHTML = 'NIK kosong';
+            } else if (!validator.isLength(nik.value, { min: 8, max: 16 })) {
+                errors.push('NIK harus antara 8 hingga 16 karakter');
+                nikError.innerHTML = 'NIK harus antara 8 hingga 16 karakter';
+            }
+
+            if (validator.isEmpty(name.value)) {
+                errors.push('Nama kosong');
+                namaError.innerHTML = 'Nama kosong';
+            } else if (!validator.isAlpha(name.value, 'en-US', { ignore: ' ' })) {
+                errors.push('Nama hanya boleh berisi huruf');
+                namaError.innerHTML = 'Nama hanya boleh berisi huruf';
+            }
+
+            return errors.length === 0;
+        }
+
+        function addNewData(e) {
+            e.preventDefault();
+
+            if (!validation()) return;
+
+            axios.post('save-data.php', {
+                'nik': nik.value,
+                'name': name.value
+            }).then(function(response) {
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td>${tableBody.rows.length + 1}</td>
+                    <td>${response.data.nik}</td>
+                    <td>${response.data.name}</td>
+                `;
+                tableBody.appendChild(newRow);
+
+                nik.value = '';
+                name.value = '';
+                button.setAttribute('disabled', true);
+            }).catch(function(error) {
+                console.error("Error saving data:", error);
+            });
+        }
+    </script>
+</body>
+</html>
